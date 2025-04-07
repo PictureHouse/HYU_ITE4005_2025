@@ -1,5 +1,6 @@
 import sys
 from collections import Counter
+from itertools import combinations
 
 def get_transactions(input):
     transactions = []
@@ -68,24 +69,51 @@ def apriori(transactions, min_support):
         result.append(set(itemset))
     return result
 
-def get_association_rules(frequent_itemsets, min_support):
-    return 0
+def get_support(subset, transactions):
+    union_set = subset[0].union(subset[1])
+    count = 0
+    for transaction in transactions:
+        if union_set.issubset(transaction):
+            count += 1
+    support = count / len(transactions) * 100
+    return support
 
-def write_output(output):
-    return 0
+def get_confidence(subset, transactions):
+    item_set_count = 0
+    associative_item_set_count = 0
+    for transaction in transactions:
+        if subset[0].issubset(transaction):
+            item_set_count += 1
+            if subset[1].issubset(transaction):
+                associative_item_set_count += 1
+    confidence = associative_item_set_count / item_set_count * 100
+    return confidence
+
+def get_association_rules(output, frequent_itemsets, transactions):
+    subsets = list()
+    for itemset in frequent_itemsets:
+        for i in range(1, len(itemset)):
+            for a in combinations(itemset, i):
+                a = set(a)
+                b = set(itemset) - a
+                subsets.append((a, b))
+    for subset in subsets:
+        support = get_support(subset, transactions)
+        confidence = get_confidence(subset, transactions)
+        output_line = f"{subset[0]}\t{subset[1]}\t{support:.2f}\t{confidence:.2f}\n"
+        output.write(output_line)
 
 def main():
     args = sys.argv[1:]
     min_support = float(args[0])
     with open(args[1], 'r') as input:
         transactions = get_transactions(input)
-
+        input.close()
     frequent_itemsets = list()
     frequent_itemsets = apriori(transactions, min_support)
-    print(frequent_itemsets)
-
     with open(args[2], 'w') as output:
-        write_output(output)
+        get_association_rules(output, frequent_itemsets, transactions)
+        output.close()
 
 if __name__ == '__main__':
     main()
