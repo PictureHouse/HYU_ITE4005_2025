@@ -1,3 +1,7 @@
+# Environment
+# OS: MacOS
+# Language: Python 3.13
+
 import sys
 from collections import Counter
 from itertools import combinations
