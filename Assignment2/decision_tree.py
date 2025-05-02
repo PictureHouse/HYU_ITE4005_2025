@@ -3,6 +3,7 @@
 # Language: Python 3.13
 
 import sys
+import math
 
 def get_data(file):
     lines = file.readlines()
@@ -11,6 +12,58 @@ def get_data(file):
     for line in lines[1:]:
         attribute_values.append(line.strip().split('\t'))
     return attribute_names, attribute_values
+
+def calculate_entropy(attribute_values, class_index):
+    class_count = {}
+    for row in attribute_values:
+        class_value = row[class_index]
+        if class_value not in class_count:
+            class_count[class_value] = 0
+        class_count[class_value] += 1
+    total = len(attribute_values)
+    entropy = 0
+    for count in class_count.values():
+        p = count / total
+        entropy -= p * math.log2(p)
+    return entropy
+
+def calculate_information_gain(attribute_values, attribute_index, class_index):
+    entropy_before = calculate_entropy(attribute_values, class_index)
+    value_data = {}
+    for row in attribute_values:
+        value = row[attribute_index]
+        if value not in value_data:
+            value_data[value] = []
+        value_data[value].append(row)
+    total = len(attribute_values)
+    entropy_after = 0
+    for subset in value_data.values():
+        p = len(subset) / total
+        entropy_after += p * calculate_entropy(subset, class_index)
+    information_gain = entropy_before - entropy_after
+    return information_gain
+
+def calculate_split_info(attribute_values, attribute_index):
+    value_count = {}
+    for row in attribute_values:
+        value = row[attribute_index]
+        if value not in value_count:
+            value_count[value] = 0
+        value_count[value] += 1
+    total = len(attribute_values)
+    split_info = 0
+    for count in value_count.values():
+        p = count / total
+        split_info -= p * math.log2(p)
+    return split_info
+
+def calculate_gain_ratio(attribute_values, attribute_index, class_index):
+    information_gain = calculate_information_gain(attribute_values, attribute_index, class_index)
+    split_info = calculate_split_info(attribute_values, attribute_index)
+    if split_info == 0:
+        return 0
+    else:
+        return information_gain / split_info
 
 def write_result(file, attributes, data):
     file.write('\t'.join(attributes) + '\n')
