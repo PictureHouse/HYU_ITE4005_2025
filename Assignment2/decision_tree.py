@@ -65,6 +65,19 @@ def calculate_gain_ratio(attribute_values, attribute_index, class_index):
     else:
         return information_gain / split_info
 
+def feature_selection(attribute_values, attribute_names, used_attributes, class_index):
+    best_attribute = -1
+    best_gain_ratio = -1
+    for i in range(len(attribute_names) - 1):
+        if i in used_attributes:
+            continue
+        else:
+            current_gain_ratio = calculate_gain_ratio(attribute_values, i, class_index)
+            if current_gain_ratio > best_gain_ratio:
+                best_attribute = i
+                best_gain_ratio = current_gain_ratio
+    return best_attribute, best_gain_ratio
+
 def write_result(file, attributes, data):
     file.write('\t'.join(attributes) + '\n')
     for line in data:
