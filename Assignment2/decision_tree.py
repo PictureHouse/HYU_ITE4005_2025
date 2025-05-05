@@ -66,7 +66,7 @@ def calculate_gain_ratio(attribute_values, attribute_index, class_index):
         return information_gain / split_info
 
 def feature_selection(attribute_values, attribute_names, used_attributes, class_index):
-    best_attribute = -1
+    best_attribute_index = -1
     best_gain_ratio = -1
     for i in range(len(attribute_names) - 1):
         if i in used_attributes:
@@ -74,9 +74,76 @@ def feature_selection(attribute_values, attribute_names, used_attributes, class_
         else:
             current_gain_ratio = calculate_gain_ratio(attribute_values, i, class_index)
             if current_gain_ratio > best_gain_ratio:
-                best_attribute = i
+                best_attribute_index = i
                 best_gain_ratio = current_gain_ratio
-    return best_attribute, best_gain_ratio
+    return best_attribute_index, best_gain_ratio
+
+class Node:
+    def __init__(self, attribute_name = None, value = None, children = None, label = None):
+        self.attribute_name = attribute_name
+        self.value = value
+        self.children = children or {}
+        self.label = label
+
+    def is_leaf(self):
+        return self.children is not None
+
+def construct_decision_tree(attribute_values, attribute_names, used_attributes, class_index):
+    class_values = []
+    for row in attribute_values:
+        class_values.append(row[class_index])
+    all_same = True
+    first_class = class_values[0] if class_values else None
+    for value in class_values:
+        if value != first_class:
+            all_same = False
+            break
+    if all_same and class_values:
+        return Node(label = class_values[0])
+
+    if len(used_attributes) == len(attribute_names) - 1:
+        class_count = {}
+        for value in class_values:
+            if value not in class_count:
+                class_count[value] = 0
+            class_count[value] += 1
+        most_common_class = None
+        max_count = -1
+        for class_name, count in class_count.items():
+            if count > max_count:
+                most_common_class = class_name
+                max_count = count
+        return Node(label = most_common_class)
+
+    best_attribute_index, best_gain_ratio = feature_selection(attribute_values, attribute_names, used_attributes, class_index)
+    if best_gain_ratio <= 0:
+        class_count = {}
+        for value in class_values:
+            if value not in class_count:
+                class_count[value] = 0
+            class_count[value] += 1
+        most_common_class = None
+        max_count = -1
+        for class_name, count in class_count.items():
+            if count > max_count:
+                most_common_class = class_name
+                max_count = count
+        return Node(label=most_common_class)
+
+    decision_tree = Node(attribute_name = best_attribute_index)
+    used_attributes.add(best_attribute_index)
+    value_datasets = {}
+    for row in attribute_values:
+        value = row[best_attribute_index]
+        if value not in value_datasets:
+            value_datasets[value] = []
+        value_datasets[value].append(row)
+    for value in value_datasets:
+        subset = value_datasets[value]
+        child = construct_decision_tree(subset, attribute_names, used_attributes, class_index)
+        child.value = value
+        decision_tree.children[value] = child
+    return decision_tree
 
 def write_result(file, attributes, data):
     file.write('\t'.join(attributes) + '\n')
@@ -86,15 +153,17 @@ def write_result(file, attributes, data):
 def main():
     args = sys.argv[1:]
     with open(args[0], 'r') as train:
-        train_attribute_names, train_data = get_data(train)
+        attribute_names, train_data = get_data(train)
         train.close()
-    # 훈련 수행 코드 구현
+    used_attributes = set()
+    class_index = len(attribute_names) - 1
+    decision_tree = construct_decision_tree(train_data, attribute_names, used_attributes, class_index)
     with open(args[1], 'r') as test:
         test_attribute_names, test_data = get_data(test)
         test.close()
     # 테스트 수행 코드 구현
     with open(args[2], 'w') as result:
-        write_result(result, train_attribute_names, train_data)
+        write_result(result, attribute_names, train_data)
         result.close()
 
 if __name__ == '__main__':
