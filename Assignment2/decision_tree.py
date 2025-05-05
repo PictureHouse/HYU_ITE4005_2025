@@ -79,14 +79,14 @@ def feature_selection(attribute_values, attribute_names, used_attributes, class_
     return best_attribute_index, best_gain_ratio
 
 class Node:
-    def __init__(self, attribute_name = None, value = None, children = None, label = None):
+    def __init__(self, attribute_name = None, value = None, children = None, class_label = None):
         self.attribute_name = attribute_name
         self.value = value
         self.children = children or {}
-        self.label = label
+        self.class_label = class_label
 
     def is_leaf(self):
-        return self.children is not None
+        return self.class_label is not None
 
 def construct_decision_tree(attribute_values, attribute_names, used_attributes, class_index):
     class_values = []
@@ -99,7 +99,7 @@ def construct_decision_tree(attribute_values, attribute_names, used_attributes, 
             all_same = False
             break
     if all_same and class_values:
-        return Node(label = class_values[0])
+        return Node(class_label = class_values[0])
 
     if len(used_attributes) == len(attribute_names) - 1:
         class_count = {}
@@ -113,7 +113,7 @@ def construct_decision_tree(attribute_values, attribute_names, used_attributes, 
             if count > max_count:
                 most_common_class = class_name
                 max_count = count
-        return Node(label = most_common_class)
+        return Node(class_label = most_common_class)
 
     best_attribute_index, best_gain_ratio = feature_selection(attribute_values, attribute_names, used_attributes, class_index)
     if best_gain_ratio <= 0:
@@ -128,7 +128,7 @@ def construct_decision_tree(attribute_values, attribute_names, used_attributes, 
             if count > max_count:
                 most_common_class = class_name
                 max_count = count
-        return Node(label=most_common_class)
+        return Node(class_label=most_common_class)
 
     decision_tree = Node(attribute_name = best_attribute_index)
     used_attributes.add(best_attribute_index)
@@ -144,6 +144,23 @@ def construct_decision_tree(attribute_values, attribute_names, used_attributes, 
         child.value = value
         decision_tree.children[value] = child
     return decision_tree
+
+def make_prediction(node, sample):
+    if node.is_leaf():
+        return node.class_label
+    else:
+        value = sample[node.attribute_name]
+        if value in node.children:
+            return make_prediction(node.children[value], sample)
+        else:
+            class_counts = {}
+            for child in node.children.values():
+                if child.is_leaf():
+                    if child.label not in class_counts:
+                        class_counts[child.label] = 0
+                    class_counts[child.label] += 1
+            if class_counts:
+                return max(class_counts, key=class_counts.get)
 
 def write_result(file, attributes, data):
     file.write('\t'.join(attributes) + '\n')
@@ -161,9 +178,12 @@ def main():
     with open(args[1], 'r') as test:
         test_attribute_names, test_data = get_data(test)
         test.close()
-    # 테스트 수행 코드 구현
+    predictions = []
+    for sample in test_data:
+        prediction = sample + [make_prediction(decision_tree, sample)]
+        predictions.append(prediction)
     with open(args[2], 'w') as result:
-        write_result(result, attribute_names, train_data)
+        write_result(result, attribute_names, predictions)
         result.close()
 
 if __name__ == '__main__':
