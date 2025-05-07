@@ -156,9 +156,9 @@ def make_prediction(node, sample):
             class_counts = {}
             for child in node.children.values():
                 if child.is_leaf():
-                    if child.label not in class_counts:
-                        class_counts[child.label] = 0
-                    class_counts[child.label] += 1
+                    if child.class_label not in class_counts:
+                        class_counts[child.class_label] = 0
+                    class_counts[child.class_label] += 1
             if class_counts:
                 return max(class_counts, key=class_counts.get)
 
