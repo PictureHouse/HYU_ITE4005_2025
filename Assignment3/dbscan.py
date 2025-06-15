@@ -24,8 +24,7 @@ def range_query(data, point_index, eps):
             neighbors.append(i)
     return neighbors
 
-def expand_neighborhood(data, label, point_index, neighbors, cluster_id, eps, min_pts):
-    label[point_index] = cluster_id
+def expand_neighborhood(data, label, neighbors, cluster_id, eps, min_pts):
     i = 0
     while i < len(neighbors):
         neighbor_index = neighbors[i]
@@ -50,7 +49,8 @@ def dbscan(data, eps, min_pts):
                 label[point_index] = -1
             else:
                 cluster_id += 1
-                expand_neighborhood(data, label, point_index, neighbors, cluster_id, eps, min_pts)
+                label[point_index] = cluster_id
+                expand_neighborhood(data, label, neighbors, cluster_id, eps, min_pts)
     return label
 
 def write_results(input_filename, clusters, n):
